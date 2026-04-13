@@ -5268,28 +5268,34 @@ document.addEventListener("DOMContentLoaded", () => {
   let vacancySwiper = null;
   if (vacancySwiperEl) {
     vacancySwiper = new Swiper(vacancySwiperEl, {
-      direction: "horizontal",
+      direction: window.innerWidth >= 1024 ? "vertical" : "horizontal",
       slidesPerView: "auto",
       spaceBetween: 12,
       loop: true,
+      loopAdditionalSlides: 10,
       allowTouchMove: true,
-      speed: 6e3,
+      speed: 5e3,
       autoplay: window.innerWidth >= 1024 ? {
         delay: 0,
-        disableOnInteraction: false,
-        pauseOnMouseEnter: false
+        disableOnInteraction: true,
+        pauseOnMouseEnter: true
       } : false,
+      freeMode: true,
+      freeModeMomentum: false,
       observer: true,
       observeParents: true,
       breakpoints: {
-        1024: {
-          direction: "vertical",
-          allowTouchMove: false
-        },
         0: {
+          direction: "horizontal",
           autoplay: false,
           speed: 300,
-          centeredSlides: true
+          centeredSlides: true,
+          freeMode: false
+        },
+        1024: {
+          direction: "vertical",
+          centeredSlides: false,
+          freeMode: true
         }
       }
     });
@@ -5307,6 +5313,7 @@ document.addEventListener("DOMContentLoaded", () => {
     new Swiper(newsSwiperEl, {
       slidesPerView: 3.3,
       spaceBetween: 12,
+      loop: true,
       navigation: {
         nextEl: ".swiper-button-next-news",
         prevEl: ".swiper-button-prev-news"
@@ -5385,6 +5392,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   const avatarButtons = document.querySelectorAll("[data-btn-avatar]");
   const avatars = document.querySelectorAll("[data-avatar]");
+  const AUTO_SWITCH_DELAY = 3e3;
+  let currentIndex = 0;
+  let autoSwitchInterval = null;
+  let isManualMode = false;
   function showAvatar(id) {
     const currentAvatar = document.querySelector(`[data-avatar="${id}"]`);
     if (!currentAvatar) return;
@@ -5402,15 +5413,38 @@ document.addEventListener("DOMContentLoaded", () => {
     requestAnimationFrame(() => {
       currentAvatar.classList.add("is-animating");
     });
+    currentIndex = [...avatarButtons].findIndex(
+      (button) => button.getAttribute("data-btn-avatar") === id
+    );
+  }
+  function showNextAvatar() {
+    if (!avatarButtons.length) return;
+    currentIndex = (currentIndex + 1) % avatarButtons.length;
+    const nextId = avatarButtons[currentIndex].getAttribute("data-btn-avatar");
+    showAvatar(nextId);
+  }
+  function startAutoSwitch() {
+    if (autoSwitchInterval || isManualMode || avatarButtons.length <= 1) return;
+    autoSwitchInterval = setInterval(() => {
+      showNextAvatar();
+    }, AUTO_SWITCH_DELAY);
+  }
+  function stopAutoSwitch() {
+    clearInterval(autoSwitchInterval);
+    autoSwitchInterval = null;
   }
   avatarButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const id = button.getAttribute("data-btn-avatar");
+      isManualMode = true;
+      stopAutoSwitch();
       showAvatar(id);
     });
   });
-  if (avatars.length) {
-    showAvatar("2");
+  if (avatars.length && avatarButtons.length) {
+    const firstId = avatarButtons[0].getAttribute("data-btn-avatar");
+    showAvatar(firstId);
+    startAutoSwitch();
   }
   if (typeof Fancybox !== "undefined") {
     Fancybox.bind("[data-fancybox]", {});
@@ -5447,7 +5481,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   const cards = [...document.querySelectorAll(".card")];
-  const stickyTop = 40;
+  const stickyTop = 200;
   const scaleStep = 0.06;
   function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
@@ -5481,8 +5515,16 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("resize", updateCards);
   }
   const menu = document.querySelector(".anchor-menu__list");
-  const links = document.querySelectorAll(".anchor-menu__link");
+  const links = [...document.querySelectorAll(".anchor-menu__link")];
   const indicator = document.querySelector(".anchor-menu__indicator");
+  const stickySections = [...document.querySelectorAll(".card")];
+  const HEADER_OFFSET = 120;
+  let currentActiveLink = null;
+  let storedSections = [];
+  let isProgrammaticScroll = false;
+  let scrollUnlockTimer = null;
+  let anchorTicking = false;
+  let isMeasuring = false;
   function moveIndicator(activeLink) {
     if (!activeLink || !indicator || !menu) return;
     const menuRect = menu.getBoundingClientRect();
@@ -5491,7 +5533,6 @@ document.addEventListener("DOMContentLoaded", () => {
     indicator.style.width = `${linkRect.width}px`;
     indicator.style.transform = `translateX(${left}px)`;
   }
-  let currentActiveLink = null;
   function setActiveLink(activeLink, scrollMenu = false) {
     if (!activeLink) return;
     if (activeLink === currentActiveLink) return;
@@ -5502,61 +5543,153 @@ document.addEventListener("DOMContentLoaded", () => {
     moveIndicator(activeLink);
     if (scrollMenu) {
       activeLink.scrollIntoView({
-        behavior: "smooth",
+        behavior: "auto",
         inline: "center",
         block: "nearest"
       });
     }
   }
-  const sections = [...links].map((link) => {
-    const href = link.getAttribute("href");
-    if (!href || !href.startsWith("#")) return null;
-    const section = document.querySelector(href);
-    return section ? { link, section } : null;
-  }).filter(Boolean);
-  if (sections.length) {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        if (!visible.length) return;
-        const activeSection = visible[0].target;
-        const current = sections.find((item) => item.section === activeSection);
-        if (current) {
-          setActiveLink(current.link, false);
-        }
-      },
-      {
-        threshold: [0.2, 0.4, 0.6, 0.8],
-        rootMargin: "-20% 0px -60% 0px"
+  function disableStickyForMeasure() {
+    stickySections.forEach((section) => {
+      section.classList.add("is-measuring");
+    });
+  }
+  function restoreStickyAfterMeasure() {
+    stickySections.forEach((section) => {
+      section.classList.remove("is-measuring");
+    });
+  }
+  function buildSectionsMap() {
+    storedSections = links.map((link) => {
+      const href = link.getAttribute("href");
+      if (!href || !href.startsWith("#")) return null;
+      const section = document.querySelector(href);
+      if (!section) return null;
+      return {
+        link,
+        href,
+        section,
+        top: 0
+      };
+    }).filter(Boolean);
+    updateStoredPositions();
+  }
+  function updateStoredPositions() {
+    if (!storedSections.length || isMeasuring) return;
+    isMeasuring = true;
+    disableStickyForMeasure();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        storedSections.forEach((item) => {
+          item.top = Math.max(
+            0,
+            Math.round(
+              window.pageYOffset + item.section.getBoundingClientRect().top - HEADER_OFFSET
+            )
+          );
+        });
+        console.log("storedSections:", storedSections);
+        console.table(
+          storedSections.map((item) => ({
+            href: item.href,
+            top: item.top
+          }))
+        );
+        restoreStickyAfterMeasure();
+        isMeasuring = false;
+      });
+    });
+  }
+  function getCurrentSectionByScroll() {
+    if (!storedSections.length) return null;
+    const currentY = window.pageYOffset + HEADER_OFFSET + 20;
+    let active = storedSections[0];
+    for (const item of storedSections) {
+      if (currentY >= item.top) {
+        active = item;
+      } else {
+        break;
       }
-    );
-    sections.forEach((item) => observer.observe(item.section));
+    }
+    return active;
+  }
+  function updateActiveAnchor() {
+    if (isProgrammaticScroll || isMeasuring) return;
+    const active = getCurrentSectionByScroll();
+    if (active) {
+      setActiveLink(active.link, false);
+    }
+  }
+  function onScrollAnchor() {
+    if (anchorTicking || isMeasuring) return;
+    anchorTicking = true;
+    requestAnimationFrame(() => {
+      updateActiveAnchor();
+      anchorTicking = false;
+    });
+  }
+  function scrollToStoredSection(href) {
+    const item = storedSections.find((section) => section.href === href);
+    if (!item) return;
+    console.log("scrollTo:", item);
+    window.scrollTo({
+      top: item.top,
+      behavior: "smooth"
+    });
   }
   links.forEach((link) => {
     link.addEventListener("click", (e) => {
       const href = link.getAttribute("href");
       if (!href || !href.startsWith("#")) return;
-      const target = document.querySelector(href);
-      if (!target) return;
+      const item = storedSections.find((section) => section.href === href);
+      if (!item) return;
       e.preventDefault();
-      target.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
+      isProgrammaticScroll = true;
+      clearTimeout(scrollUnlockTimer);
       setActiveLink(link, true);
+      scrollToStoredSection(href);
+      history.replaceState(null, "", href);
+      scrollUnlockTimer = setTimeout(() => {
+        isProgrammaticScroll = false;
+        updateActiveAnchor();
+      }, 900);
     });
   });
+  window.addEventListener("scroll", onScrollAnchor, { passive: true });
   window.addEventListener("load", () => {
-    const initialActive = document.querySelector(".anchor-menu__link--active") || links[0];
+    buildSectionsMap();
+    const hash = window.location.hash;
+    const hashLink = hash && document.querySelector(`.anchor-menu__link[href="${hash}"]`);
+    const initialActive = hashLink || document.querySelector(".anchor-menu__link--active") || links[0];
     if (initialActive) {
       currentActiveLink = initialActive;
+      initialActive.classList.add("anchor-menu__link--active");
       moveIndicator(initialActive);
     }
+    setTimeout(() => {
+      updateActiveAnchor();
+    }, 50);
   });
   window.addEventListener("resize", () => {
+    updateStoredPositions();
     const activeLink = document.querySelector(".anchor-menu__link--active");
     if (activeLink) {
       moveIndicator(activeLink);
     }
+    setTimeout(() => {
+      updateActiveAnchor();
+    }, 50);
   });
+  setTimeout(() => {
+    updateStoredPositions();
+    setTimeout(() => {
+      updateActiveAnchor();
+    }, 50);
+  }, 300);
+  setTimeout(() => {
+    updateStoredPositions();
+    setTimeout(() => {
+      updateActiveAnchor();
+    }, 50);
+  }, 1e3);
 });
