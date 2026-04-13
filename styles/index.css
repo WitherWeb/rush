@@ -1585,7 +1585,7 @@ section {
   border-radius: 12px;
   font-weight: 500;
   font-size: 16px;
-  line-height: 20px;
+  line-height: inherit;
   color: #616161;
   display: block;
 }
@@ -2350,7 +2350,7 @@ section {
 .media-buying__direction-btn {
   font-weight: 500;
   font-size: 16px;
-  line-height: 18px;
+  line-height: inherit;
   color: #616161;
   padding: 12px;
   border: 1px solid #616161;
@@ -2730,7 +2730,8 @@ section {
   padding: 8px 20px;
   border-radius: 12px;
   background-color: transparent;
-  line-height: 20px;
+  line-height: inherit;
+  color: black;
 }
 .vacancy__btn.active {
   background-color: white;
@@ -2860,12 +2861,15 @@ section {
 .vacancy__buyers-tag {
   font-weight: 500;
   font-size: 16px;
-  line-height: 20px;
+  line-height: inherit;
   color: #f4f4f4;
   border: 1px solid #f4f4f4;
   border-radius: 12px;
   padding: 12px;
   color: white;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 @media (max-width: 576px) {
   .vacancy__buyers-tag {
@@ -3328,11 +3332,15 @@ section {
     padding: 7px 10px;
   }
 }
+.start__link {
+  position: relative;
+  z-index: 1;
+}
 @media (max-width: 576px) {
   .start__img {
     margin-top: -30px;
     position: relative;
-    z-index: -1;
+    z-index: 0;
     transform: scale(1);
   }
 }

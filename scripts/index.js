@@ -5613,11 +5613,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     return active;
   }
+  function isMobileMenu() {
+    return window.innerWidth <= 1024;
+  }
   function updateActiveAnchor() {
     if (isProgrammaticScroll || isMeasuring) return;
     const active = getCurrentSectionByScroll();
     if (active) {
-      setActiveLink(active.link, false);
+      setActiveLink(active.link, isMobileMenu());
     }
   }
   function onScrollAnchor() {
