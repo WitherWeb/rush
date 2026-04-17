@@ -3623,11 +3623,6 @@ section {
     top: 51px;
   }
 }
-@media (max-height: 700px) {
-  .card {
-    position: static;
-  }
-}
 
 .card.is-measuring {
   position: static !important;
