@@ -5551,15 +5551,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const menu = document.querySelector(".anchor-menu__list");
   const links = [...document.querySelectorAll(".anchor-menu__link")];
   const indicator = document.querySelector(".anchor-menu__indicator");
-  const stickySections = [...document.querySelectorAll(".card")];
   const HEADER_OFFSET = 120;
   let currentActiveLink = null;
   let storedSections = [];
   let isProgrammaticScroll = false;
   let scrollUnlockTimer = null;
   let anchorTicking = false;
-  let isMeasuring = false;
-  let resizeTimer = null;
   function moveIndicator(activeLink) {
     if (!activeLink || !indicator || !menu) return;
     const menuRect = menu.getBoundingClientRect();
@@ -5590,16 +5587,6 @@ document.addEventListener("DOMContentLoaded", () => {
       scrollMenuToLink(activeLink);
     }
   }
-  function disableStickyForMeasure() {
-    stickySections.forEach((section) => {
-      section.classList.add("is-measuring");
-    });
-  }
-  function restoreStickyAfterMeasure() {
-    stickySections.forEach((section) => {
-      section.classList.remove("is-measuring");
-    });
-  }
   function buildSectionsMap() {
     storedSections = links.map((link) => {
       const href = link.getAttribute("href");
@@ -5613,25 +5600,16 @@ document.addEventListener("DOMContentLoaded", () => {
         top: 0
       };
     }).filter(Boolean);
-    updateStoredPositions();
   }
   function updateStoredPositions() {
-    if (!storedSections.length || isMeasuring) return;
-    isMeasuring = true;
-    disableStickyForMeasure();
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        storedSections.forEach((item) => {
-          item.top = Math.max(
-            0,
-            Math.round(
-              window.pageYOffset + item.section.getBoundingClientRect().top - HEADER_OFFSET
-            )
-          );
-        });
-        restoreStickyAfterMeasure();
-        isMeasuring = false;
-      });
+    if (!storedSections.length) return;
+    storedSections.forEach((item) => {
+      item.top = Math.max(
+        0,
+        Math.round(
+          window.pageYOffset + item.section.getBoundingClientRect().top - HEADER_OFFSET
+        )
+      );
     });
   }
   function getCurrentSectionByScroll() {
@@ -5648,14 +5626,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return active;
   }
   function updateActiveAnchor() {
-    if (isProgrammaticScroll || isMeasuring) return;
+    if (isProgrammaticScroll) return;
     const active = getCurrentSectionByScroll();
     if (active) {
       setActiveLink(active.link, false);
     }
   }
   function onScrollAnchor() {
-    if (anchorTicking || isMeasuring) return;
+    if (anchorTicking) return;
     anchorTicking = true;
     requestAnimationFrame(() => {
       updateActiveAnchor();
@@ -5691,6 +5669,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("scroll", onScrollAnchor, { passive: true });
   window.addEventListener("load", () => {
     buildSectionsMap();
+    updateStoredPositions();
     const hash = window.location.hash;
     const hashLink = hash && document.querySelector(`.anchor-menu__link[href="${hash}"]`);
     const initialActive = hashLink || document.querySelector(".anchor-menu__link--active") || links[0];
@@ -5704,28 +5683,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 50);
   });
   window.addEventListener("resize", () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      updateStoredPositions();
-      const activeLink = document.querySelector(".anchor-menu__link--active");
-      if (activeLink) {
-        moveIndicator(activeLink);
-      }
-      setTimeout(() => {
-        updateActiveAnchor();
-      }, 50);
-    }, 150);
+    const activeLink = document.querySelector(".anchor-menu__link--active");
+    if (activeLink) {
+      moveIndicator(activeLink);
+    }
   });
-  setTimeout(() => {
-    updateStoredPositions();
-    setTimeout(() => {
-      updateActiveAnchor();
-    }, 50);
-  }, 300);
-  setTimeout(() => {
-    updateStoredPositions();
-    setTimeout(() => {
-      updateActiveAnchor();
-    }, 50);
-  }, 1e3);
 });
