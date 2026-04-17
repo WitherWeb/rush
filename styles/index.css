@@ -1616,7 +1616,7 @@ section {
 }
 .advantages__content {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 0.8fr;
   grid-gap: clamp(40px, 6vw, 120px);
   gap: clamp(40px, 6vw, 120px);
   align-items: flex-start;
