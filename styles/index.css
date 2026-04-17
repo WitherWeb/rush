@@ -1997,7 +1997,7 @@ section {
 }
 @media (max-width: 576px) {
   .payment-models__card {
-    height: 612px;
+    height: 640px;
     padding: 20px;
   }
 }
@@ -2213,7 +2213,7 @@ section {
 }
 @media (max-width: 576px) {
   .payment-models__card-mask {
-    min-height: 612px;
+    min-height: 640px;
   }
 }
 @media (max-width: 400px) {
@@ -3141,7 +3141,14 @@ section {
 }
 .vacancy__loop-img-pic {
   align-items: center;
+  display: flex;
 }
+@media (max-width: 576px) {
+  .vacancy__loop-img {
+    max-width: 310px;
+  }
+}
+
 .news {
   margin-bottom: 160px;
 }
@@ -3614,6 +3621,11 @@ section {
 @media (max-width: 576px) {
   .card {
     top: 51px;
+  }
+}
+@media (max-height: 799px) {
+  .card {
+    position: static;
   }
 }
 

@@ -5548,4 +5548,184 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("load", updateCards);
   setTimeout(updateCards, 300);
   setTimeout(updateCards, 1e3);
+  const menu = document.querySelector(".anchor-menu__list");
+  const links = [...document.querySelectorAll(".anchor-menu__link")];
+  const indicator = document.querySelector(".anchor-menu__indicator");
+  const stickySections = [...document.querySelectorAll(".card")];
+  const HEADER_OFFSET = 120;
+  let currentActiveLink = null;
+  let storedSections = [];
+  let isProgrammaticScroll = false;
+  let scrollUnlockTimer = null;
+  let anchorTicking = false;
+  let isMeasuring = false;
+  let resizeTimer = null;
+  function moveIndicator(activeLink) {
+    if (!activeLink || !indicator || !menu) return;
+    const menuRect = menu.getBoundingClientRect();
+    const linkRect = activeLink.getBoundingClientRect();
+    const left = linkRect.left - menuRect.left + menu.scrollLeft;
+    indicator.style.width = `${linkRect.width}px`;
+    indicator.style.transform = `translateX(${left}px)`;
+  }
+  function scrollMenuToLink(activeLink) {
+    if (!activeLink || !menu) return;
+    const menuRect = menu.getBoundingClientRect();
+    const linkRect = activeLink.getBoundingClientRect();
+    const targetLeft = menu.scrollLeft + (linkRect.left - menuRect.left) - menuRect.width / 2 + linkRect.width / 2;
+    menu.scrollTo({
+      left: Math.max(0, targetLeft),
+      behavior: "smooth"
+    });
+  }
+  function setActiveLink(activeLink, scrollMenu = false) {
+    if (!activeLink) return;
+    if (activeLink === currentActiveLink) return;
+    currentActiveLink = activeLink;
+    links.forEach((link) => {
+      link.classList.toggle("anchor-menu__link--active", link === activeLink);
+    });
+    moveIndicator(activeLink);
+    if (scrollMenu) {
+      scrollMenuToLink(activeLink);
+    }
+  }
+  function disableStickyForMeasure() {
+    stickySections.forEach((section) => {
+      section.classList.add("is-measuring");
+    });
+  }
+  function restoreStickyAfterMeasure() {
+    stickySections.forEach((section) => {
+      section.classList.remove("is-measuring");
+    });
+  }
+  function buildSectionsMap() {
+    storedSections = links.map((link) => {
+      const href = link.getAttribute("href");
+      if (!href || !href.startsWith("#")) return null;
+      const section = document.querySelector(href);
+      if (!section) return null;
+      return {
+        link,
+        href,
+        section,
+        top: 0
+      };
+    }).filter(Boolean);
+    updateStoredPositions();
+  }
+  function updateStoredPositions() {
+    if (!storedSections.length || isMeasuring) return;
+    isMeasuring = true;
+    disableStickyForMeasure();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        storedSections.forEach((item) => {
+          item.top = Math.max(
+            0,
+            Math.round(
+              window.pageYOffset + item.section.getBoundingClientRect().top - HEADER_OFFSET
+            )
+          );
+        });
+        restoreStickyAfterMeasure();
+        isMeasuring = false;
+      });
+    });
+  }
+  function getCurrentSectionByScroll() {
+    if (!storedSections.length) return null;
+    const currentY = window.pageYOffset + HEADER_OFFSET + 20;
+    let active = storedSections[0];
+    for (const item of storedSections) {
+      if (currentY >= item.top) {
+        active = item;
+      } else {
+        break;
+      }
+    }
+    return active;
+  }
+  function updateActiveAnchor() {
+    if (isProgrammaticScroll || isMeasuring) return;
+    const active = getCurrentSectionByScroll();
+    if (active) {
+      setActiveLink(active.link, false);
+    }
+  }
+  function onScrollAnchor() {
+    if (anchorTicking || isMeasuring) return;
+    anchorTicking = true;
+    requestAnimationFrame(() => {
+      updateActiveAnchor();
+      anchorTicking = false;
+    });
+  }
+  function scrollToStoredSection(href) {
+    const item = storedSections.find((section) => section.href === href);
+    if (!item) return;
+    window.scrollTo({
+      top: item.top,
+      behavior: "smooth"
+    });
+  }
+  links.forEach((link) => {
+    link.addEventListener("click", (e) => {
+      const href = link.getAttribute("href");
+      if (!href || !href.startsWith("#")) return;
+      const item = storedSections.find((section) => section.href === href);
+      if (!item) return;
+      e.preventDefault();
+      isProgrammaticScroll = true;
+      clearTimeout(scrollUnlockTimer);
+      setActiveLink(link, true);
+      scrollToStoredSection(href);
+      history.replaceState(null, "", href);
+      scrollUnlockTimer = setTimeout(() => {
+        isProgrammaticScroll = false;
+        updateActiveAnchor();
+      }, 1400);
+    });
+  });
+  window.addEventListener("scroll", onScrollAnchor, { passive: true });
+  window.addEventListener("load", () => {
+    buildSectionsMap();
+    const hash = window.location.hash;
+    const hashLink = hash && document.querySelector(`.anchor-menu__link[href="${hash}"]`);
+    const initialActive = hashLink || document.querySelector(".anchor-menu__link--active") || links[0];
+    if (initialActive) {
+      currentActiveLink = initialActive;
+      initialActive.classList.add("anchor-menu__link--active");
+      moveIndicator(initialActive);
+    }
+    setTimeout(() => {
+      updateActiveAnchor();
+    }, 50);
+  });
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      updateStoredPositions();
+      const activeLink = document.querySelector(".anchor-menu__link--active");
+      if (activeLink) {
+        moveIndicator(activeLink);
+      }
+      setTimeout(() => {
+        updateActiveAnchor();
+      }, 50);
+    }, 150);
+  });
+  setTimeout(() => {
+    updateStoredPositions();
+    setTimeout(() => {
+      updateActiveAnchor();
+    }, 50);
+  }, 300);
+  setTimeout(() => {
+    updateStoredPositions();
+    setTimeout(() => {
+      updateActiveAnchor();
+    }, 50);
+  }, 1e3);
 });
