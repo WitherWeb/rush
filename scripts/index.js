@@ -5390,41 +5390,54 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
-  const avatarButtons = document.querySelectorAll("[data-btn-avatar]");
-  const avatars = document.querySelectorAll("[data-avatar]");
+  const avatarButtons = [...document.querySelectorAll("[data-btn-avatar]")];
+  const avatars = [...document.querySelectorAll("[data-avatar]")];
   const AUTO_SWITCH_DELAY = 3e3;
   let currentIndex = 0;
   let autoSwitchInterval = null;
   let isManualMode = false;
+  const avatarIds = [...new Set(
+    avatarButtons.map((button) => button.getAttribute("data-btn-avatar")).filter(Boolean)
+  )];
+  function getButtonsById(id) {
+    return avatarButtons.filter(
+      (button) => button.getAttribute("data-btn-avatar") === id
+    );
+  }
+  function getAvatarsById(id) {
+    return avatars.filter(
+      (avatar) => avatar.getAttribute("data-avatar") === id
+    );
+  }
   function showAvatar(id) {
-    const currentAvatar = document.querySelector(`[data-avatar="${id}"]`);
-    if (!currentAvatar) return;
+    const currentAvatars = getAvatarsById(id);
+    if (!currentAvatars.length) return;
     avatars.forEach((avatar) => {
       avatar.classList.remove("is-active", "is-animating");
     });
     avatarButtons.forEach((button) => {
       button.classList.remove("media-buying__direction-btn--active");
     });
-    const currentButton = document.querySelector(`[data-btn-avatar="${id}"]`);
-    if (currentButton) {
-      currentButton.classList.add("media-buying__direction-btn--active");
-    }
-    currentAvatar.classList.add("is-active");
-    requestAnimationFrame(() => {
-      currentAvatar.classList.add("is-animating");
+    const currentButtons = getButtonsById(id);
+    currentButtons.forEach((button) => {
+      button.classList.add("media-buying__direction-btn--active");
     });
-    currentIndex = [...avatarButtons].findIndex(
-      (button) => button.getAttribute("data-btn-avatar") === id
-    );
+    currentAvatars.forEach((avatar) => {
+      avatar.classList.add("is-active");
+      requestAnimationFrame(() => {
+        avatar.classList.add("is-animating");
+      });
+    });
+    currentIndex = avatarIds.findIndex((avatarId) => avatarId === id);
   }
   function showNextAvatar() {
-    if (!avatarButtons.length) return;
-    currentIndex = (currentIndex + 1) % avatarButtons.length;
-    const nextId = avatarButtons[currentIndex].getAttribute("data-btn-avatar");
+    if (!avatarIds.length) return;
+    currentIndex = (currentIndex + 1) % avatarIds.length;
+    const nextId = avatarIds[currentIndex];
     showAvatar(nextId);
   }
   function startAutoSwitch() {
-    if (autoSwitchInterval || isManualMode || avatarButtons.length <= 1) return;
+    if (autoSwitchInterval || isManualMode || avatarIds.length <= 1) return;
     autoSwitchInterval = setInterval(() => {
       showNextAvatar();
     }, AUTO_SWITCH_DELAY);
@@ -5436,14 +5449,14 @@ document.addEventListener("DOMContentLoaded", () => {
   avatarButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const id = button.getAttribute("data-btn-avatar");
+      if (!id) return;
       isManualMode = true;
       stopAutoSwitch();
       showAvatar(id);
     });
   });
-  if (avatars.length && avatarButtons.length) {
-    const firstId = avatarButtons[0].getAttribute("data-btn-avatar");
-    showAvatar(firstId);
+  if (avatars.length && avatarButtons.length && avatarIds.length) {
+    showAvatar(avatarIds[0]);
     startAutoSwitch();
   }
   if (typeof Fancybox !== "undefined") {
@@ -5480,22 +5493,42 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-  const cards = [...document.querySelectorAll(".card")];
   const stickyTop = 200;
   const scaleStep = 0.06;
   function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
   }
+  function isVisibleElement(element) {
+    if (!element) return false;
+    const styles = window.getComputedStyle(element);
+    if (styles.display === "none") return false;
+    if (styles.visibility === "hidden") return false;
+    if (parseFloat(styles.opacity) === 0) return false;
+    if (element.offsetParent === null && styles.position !== "fixed") return false;
+    if (element.offsetWidth === 0 && element.offsetHeight === 0) return false;
+    return true;
+  }
+  function getVisibleCards() {
+    return [...document.querySelectorAll(".card")].filter(isVisibleElement);
+  }
   function updateCards() {
-    if (!cards.length) return;
-    cards.forEach((card, index) => {
+    const visibleCards = getVisibleCards();
+    if (!visibleCards.length) return;
+    document.querySelectorAll(".card").forEach((card) => {
+      if (!visibleCards.includes(card)) {
+        card.style.transform = "";
+      }
+    });
+    visibleCards.forEach((card, index) => {
       let scale = 1;
-      const nextCard = cards[index + 1];
+      const nextCard = visibleCards[index + 1];
       if (nextCard) {
         const nextRect = nextCard.getBoundingClientRect();
-        const distance = nextRect.top - stickyTop;
-        const progress = 1 - clamp(distance / nextRect.height, 0, 1);
-        scale = 1 - progress * scaleStep;
+        if (nextRect.height > 0) {
+          const distance = nextRect.top - stickyTop;
+          const progress = 1 - clamp(distance / nextRect.height, 0, 1);
+          scale = 1 - progress * scaleStep;
+        }
       }
       card.style.transform = `scale(${scale})`;
     });
@@ -5509,11 +5542,12 @@ document.addEventListener("DOMContentLoaded", () => {
       cardsTicking = false;
     });
   }
-  if (cards.length) {
-    updateCards();
-    window.addEventListener("scroll", onScrollCards, { passive: true });
-    window.addEventListener("resize", updateCards);
-  }
+  updateCards();
+  window.addEventListener("scroll", onScrollCards, { passive: true });
+  window.addEventListener("resize", updateCards);
+  window.addEventListener("load", updateCards);
+  setTimeout(updateCards, 300);
+  setTimeout(updateCards, 1e3);
   const menu = document.querySelector(".anchor-menu__list");
   const links = [...document.querySelectorAll(".anchor-menu__link")];
   const indicator = document.querySelector(".anchor-menu__indicator");
