@@ -1517,6 +1517,7 @@ section {
 .hero__title {
   margin: 0;
   margin-bottom: 24px;
+  color: green;
 }
 @media (max-width: 576px) {
   .hero__title {
