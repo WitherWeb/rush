@@ -5272,7 +5272,6 @@ document.addEventListener("DOMContentLoaded", () => {
       slidesPerView: "auto",
       spaceBetween: 12,
       loop: true,
-      loopAdditionalSlides: 10,
       allowTouchMove: true,
       speed: 5e3,
       autoplay: window.innerWidth >= 1024 ? {
@@ -5392,7 +5391,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   const avatarButtons = [...document.querySelectorAll("[data-btn-avatar]")];
   const avatars = [...document.querySelectorAll("[data-avatar]")];
-  const AUTO_SWITCH_DELAY = 3e3;
+  const AUTO_SWITCH_DELAY = 4e3;
   let currentIndex = 0;
   let autoSwitchInterval = null;
   let isManualMode = false;
