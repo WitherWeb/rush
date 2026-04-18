@@ -5493,8 +5493,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-  const stickyTop = 200;
-  const scaleStep = 0.06;
+  const stickyTop = 0;
+  const scaleStep = 0.08;
+  const opacityStep = 1.1;
   function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
   }
@@ -5503,7 +5504,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const styles = window.getComputedStyle(element);
     if (styles.display === "none") return false;
     if (styles.visibility === "hidden") return false;
-    if (parseFloat(styles.opacity) === 0) return false;
     if (element.offsetParent === null && styles.position !== "fixed") return false;
     if (element.offsetWidth === 0 && element.offsetHeight === 0) return false;
     return true;
@@ -5517,10 +5517,12 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".card").forEach((card) => {
       if (!visibleCards.includes(card)) {
         card.style.transform = "";
+        card.style.opacity = "";
       }
     });
     visibleCards.forEach((card, index) => {
       let scale = 1;
+      let opacity = 1;
       const nextCard = visibleCards[index + 1];
       if (nextCard) {
         const nextRect = nextCard.getBoundingClientRect();
@@ -5528,9 +5530,11 @@ document.addEventListener("DOMContentLoaded", () => {
           const distance = nextRect.top - stickyTop;
           const progress = 1 - clamp(distance / nextRect.height, 0, 1);
           scale = 1 - progress * scaleStep;
+          opacity = 1 - progress * opacityStep;
         }
       }
       card.style.transform = `scale(${scale})`;
+      card.style.opacity = opacity;
     });
   }
   let cardsTicking = false;

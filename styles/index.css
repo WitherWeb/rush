@@ -1091,6 +1091,11 @@ a {
     width: 100%;
   }
 }
+@media (max-width: 400px) {
+  .btn-1 {
+    font-size: 14px;
+  }
+}
 
 .list-reset {
   list-style: none;
@@ -1247,7 +1252,7 @@ select {
 }
 @media (max-width: 400px) {
   .section-block {
-    min-height: 785px;
+    min-height: 735px;
   }
 }
 
@@ -1517,7 +1522,6 @@ section {
 .hero__title {
   margin: 0;
   margin-bottom: 24px;
-  color: green;
 }
 @media (max-width: 576px) {
   .hero__title {
@@ -1556,6 +1560,11 @@ section {
   background-color: black;
   z-index: 2;
   padding: 10px 0;
+}
+@media (max-width: 400px) {
+  .anchor-menu {
+    position: static;
+  }
 }
 .anchor-menu__content {
   display: flex;
@@ -2004,7 +2013,7 @@ section {
 }
 @media (max-width: 400px) {
   .payment-models__card {
-    height: 585px;
+    height: 530px;
   }
 }
 .payment-models__card-top {
@@ -2068,7 +2077,7 @@ section {
 }
 @media (max-width: 400px) {
   .payment-models__card-img {
-    max-width: 200px;
+    max-width: 185px;
   }
 }
 .payment-models__card-info {
@@ -2219,7 +2228,8 @@ section {
 }
 @media (max-width: 400px) {
   .payment-models__card-mask {
-    min-height: 585px;
+    min-height: 530px;
+    height: 530px;
   }
 }
 
@@ -2260,7 +2270,7 @@ section {
 }
 @media (max-width: 400px) {
   .media-buying__info {
-    min-height: 785px;
+    min-height: 735px;
   }
 }
 .media-buying__title {
@@ -2421,7 +2431,7 @@ section {
 }
 @media (max-width: 400px) {
   .media-buying__direction {
-    min-height: 785px;
+    min-height: 735px;
   }
 }
 .media-buying__direction-title {
@@ -2986,6 +2996,11 @@ section {
     position: relative;
   }
 }
+@media (max-width: 400px) {
+  .vacancy__buyer {
+    min-height: 350px;
+  }
+}
 .vacancy__buyer-top {
   display: flex;
   justify-content: space-between;
@@ -3047,6 +3062,11 @@ section {
 @media (max-width: 576px) {
   .vacancy__buyer-img {
     margin-top: auto;
+  }
+}
+@media (max-width: 400px) {
+  .vacancy__buyer-img {
+    max-width: 100px;
   }
 }
 .vacancy__buyer-bottom {
@@ -3147,6 +3167,11 @@ section {
 @media (max-width: 576px) {
   .vacancy__loop-img {
     max-width: 310px;
+  }
+}
+@media (max-width: 400px) {
+  .vacancy__loop-img {
+    max-width: 285px;
   }
 }
 
@@ -3615,13 +3640,18 @@ section {
 .card {
   position: sticky;
   top: 67px;
-  will-change: transform;
-  transform: translateZ(0);
+  will-change: transform, opacity;
   backface-visibility: hidden;
+  transform-origin: center top;
 }
 @media (max-width: 576px) {
   .card {
     top: 51px;
+  }
+}
+@media (max-width: 400px) {
+  .card {
+    top: 0;
   }
 }
 @media (max-height: 650px) {
