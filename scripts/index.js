@@ -5556,8 +5556,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const links = [...document.querySelectorAll(".anchor-menu__link")];
   const indicator = document.querySelector(".anchor-menu__indicator");
   const stickySections = [...document.querySelectorAll(".card[id]")];
+  console.log(window);
   const anchorMenu = document.querySelector(".anchor-menu");
-  const HEADER_OFFSET = anchorMenu.clientHeight;
+  const HEADER_OFFSET = window.innerWidth > 400 ? anchorMenu.clientHeight : 0;
+  console.log(HEADER_OFFSET);
   let currentActiveLink = null;
   let storedSections = [];
   let isProgrammaticScroll = false;
