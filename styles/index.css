@@ -1566,6 +1566,11 @@ section {
   z-index: 2;
   padding: 10px 0;
 }
+@media (max-width: 400px) {
+  .anchor-menu {
+    position: static;
+  }
+}
 .anchor-menu__content {
   display: flex;
   justify-content: space-between;
