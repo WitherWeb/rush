@@ -5710,7 +5710,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 50);
   });
   window.addEventListener("resize", () => {
-    updateStoredPositions();
     const activeLink = document.querySelector(".anchor-menu__link--active");
     if (activeLink) {
       moveIndicator(activeLink);
