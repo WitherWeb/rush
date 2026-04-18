@@ -5555,12 +5555,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const menu = document.querySelector(".anchor-menu__list");
   const links = [...document.querySelectorAll(".anchor-menu__link")];
   const indicator = document.querySelector(".anchor-menu__indicator");
-  const HEADER_OFFSET = 120;
+  const stickySections = [...document.querySelectorAll(".card[id]")];
+  const anchorMenu = document.querySelector(".anchor-menu");
+  const HEADER_OFFSET = anchorMenu.clientHeight;
   let currentActiveLink = null;
   let storedSections = [];
   let isProgrammaticScroll = false;
   let scrollUnlockTimer = null;
   let anchorTicking = false;
+  let isMeasuring = false;
   function moveIndicator(activeLink) {
     if (!activeLink || !indicator || !menu) return;
     const menuRect = menu.getBoundingClientRect();
@@ -5568,16 +5571,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const left = linkRect.left - menuRect.left + menu.scrollLeft;
     indicator.style.width = `${linkRect.width}px`;
     indicator.style.transform = `translateX(${left}px)`;
-  }
-  function scrollMenuToLink(activeLink) {
-    if (!activeLink || !menu) return;
-    const menuRect = menu.getBoundingClientRect();
-    const linkRect = activeLink.getBoundingClientRect();
-    const targetLeft = menu.scrollLeft + (linkRect.left - menuRect.left) - menuRect.width / 2 + linkRect.width / 2;
-    menu.scrollTo({
-      left: Math.max(0, targetLeft),
-      behavior: "smooth"
-    });
   }
   function setActiveLink(activeLink, scrollMenu = false) {
     if (!activeLink) return;
@@ -5588,8 +5581,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     moveIndicator(activeLink);
     if (scrollMenu) {
-      scrollMenuToLink(activeLink);
+      activeLink.scrollIntoView({
+        behavior: "auto",
+        inline: "center",
+        block: "nearest"
+      });
     }
+  }
+  function disableStickyForMeasure() {
+    stickySections.forEach((section) => {
+      section.classList.add("is-measuring");
+    });
+  }
+  function restoreStickyAfterMeasure() {
+    stickySections.forEach((section) => {
+      section.classList.remove("is-measuring");
+    });
   }
   function buildSectionsMap() {
     storedSections = links.map((link) => {
@@ -5604,16 +5611,32 @@ document.addEventListener("DOMContentLoaded", () => {
         top: 0
       };
     }).filter(Boolean);
+    updateStoredPositions();
   }
   function updateStoredPositions() {
-    if (!storedSections.length) return;
-    storedSections.forEach((item) => {
-      item.top = Math.max(
-        0,
-        Math.round(
-          window.pageYOffset + item.section.getBoundingClientRect().top - HEADER_OFFSET
-        )
-      );
+    if (!storedSections.length || isMeasuring) return;
+    isMeasuring = true;
+    disableStickyForMeasure();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        storedSections.forEach((item) => {
+          item.top = Math.max(
+            0,
+            Math.round(
+              window.pageYOffset + item.section.getBoundingClientRect().top - HEADER_OFFSET
+            )
+          );
+        });
+        console.log("storedSections:", storedSections);
+        console.table(
+          storedSections.map((item) => ({
+            href: item.href,
+            top: item.top
+          }))
+        );
+        restoreStickyAfterMeasure();
+        isMeasuring = false;
+      });
     });
   }
   function getCurrentSectionByScroll() {
@@ -5630,14 +5653,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return active;
   }
   function updateActiveAnchor() {
-    if (isProgrammaticScroll) return;
+    if (isProgrammaticScroll || isMeasuring) return;
     const active = getCurrentSectionByScroll();
     if (active) {
       setActiveLink(active.link, false);
     }
   }
   function onScrollAnchor() {
-    if (anchorTicking) return;
+    if (anchorTicking || isMeasuring) return;
     anchorTicking = true;
     requestAnimationFrame(() => {
       updateActiveAnchor();
@@ -5647,6 +5670,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function scrollToStoredSection(href) {
     const item = storedSections.find((section) => section.href === href);
     if (!item) return;
+    console.log("scrollTo:", item);
     window.scrollTo({
       top: item.top,
       behavior: "smooth"
@@ -5667,13 +5691,12 @@ document.addEventListener("DOMContentLoaded", () => {
       scrollUnlockTimer = setTimeout(() => {
         isProgrammaticScroll = false;
         updateActiveAnchor();
-      }, 1400);
+      }, 900);
     });
   });
   window.addEventListener("scroll", onScrollAnchor, { passive: true });
   window.addEventListener("load", () => {
     buildSectionsMap();
-    updateStoredPositions();
     const hash = window.location.hash;
     const hashLink = hash && document.querySelector(`.anchor-menu__link[href="${hash}"]`);
     const initialActive = hashLink || document.querySelector(".anchor-menu__link--active") || links[0];
@@ -5687,9 +5710,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 50);
   });
   window.addEventListener("resize", () => {
+    updateStoredPositions();
     const activeLink = document.querySelector(".anchor-menu__link--active");
     if (activeLink) {
       moveIndicator(activeLink);
     }
+    setTimeout(() => {
+      updateActiveAnchor();
+    }, 50);
   });
+  setTimeout(() => {
+    updateStoredPositions();
+    setTimeout(() => {
+      updateActiveAnchor();
+    }, 50);
+  }, 300);
+  setTimeout(() => {
+    updateStoredPositions();
+    setTimeout(() => {
+      updateActiveAnchor();
+    }, 50);
+  }, 1e3);
 });

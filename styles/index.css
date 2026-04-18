@@ -631,12 +631,17 @@ html {
 }
 
 * {
-  scroll-margin-top: 230px;
+  scroll-margin-top: 100px;
   -webkit-tap-highlight-color: transparent;
 }
 @media (max-width: 576px) {
   * {
-    scroll-margin-top: 150px;
+    scroll-margin-top: 0px;
+  }
+}
+@media (max-width: 400px) {
+  * {
+    scroll-margin-top: 0px;
   }
 }
 
@@ -2007,7 +2012,7 @@ section {
 }
 @media (max-width: 576px) {
   .payment-models__card {
-    height: 640px;
+    height: 590px;
     padding: 20px;
   }
 }
@@ -2073,6 +2078,11 @@ section {
 @media (max-width: 1024px) {
   .payment-models__card-img {
     max-width: 260px;
+  }
+}
+@media (max-width: 576px) {
+  .payment-models__card-img {
+    max-width: 230px;
   }
 }
 @media (max-width: 400px) {
@@ -2223,7 +2233,7 @@ section {
 }
 @media (max-width: 576px) {
   .payment-models__card-mask {
-    min-height: 640px;
+    min-height: 590px;
   }
 }
 @media (max-width: 400px) {
@@ -2600,6 +2610,11 @@ section {
     left: auto;
     left: initial;
     z-index: -1;
+  }
+}
+@media (max-width: 400px) {
+  .media-buying__avatar:nth-child(3) .media-buying__avatar-tag {
+    top: -30px;
   }
 }
 .media-buying__avatar:nth-child(3) .media-buying__avatar-price {
@@ -3663,6 +3678,7 @@ section {
 .card.is-measuring {
   position: static !important;
   top: auto !important;
+  transform: none !important;
 }
 
 .footer {
